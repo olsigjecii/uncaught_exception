@@ -1,44 +1,3 @@
-Of course. While Rust's design with its `Result<T, E>` enum and strict compile-time checks makes traditional "uncaught exceptions" a non-issue, we can simulate the underlying security flaw: mishandling errors caused by unvalidated user input, leading to catastrophic failure and information disclosure. 💥
-
-In Rust, the closest equivalent to an uncaught exception is a `panic!`. A panic occurs when the program encounters an unrecoverable error, unwinds the stack, and typically terminates. A common way to trigger a panic is by calling `.unwrap()` or `.expect()` on a `Result` that holds an `Err` value or an `Option` that is `None`.
-
-This lesson will demonstrate how relying on `unwrap()` with user-controlled data can crash an application and how to properly handle errors to build resilient and secure services.
-
-### **Demonstration Application: Rust & `actix-web`**
-
-Here is a complete, runnable `actix-web` application that contains both the vulnerable code (which will panic) and the fixed, secure code.
-
-#### **Project Structure:**
-
-```
-.
-├── Cargo.toml
-└── src
-    └── main.rs
-```
-
-#### **`Cargo.toml`**
-
-You will need the following dependencies for our `actix-web` application.
-
-```toml
-[package]
-name = "uncaught-exception-rust"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-actix-web = "4"
-serde = { version = "1.0", features = ["derive"] }
-log = "0.4"
-env_logger = "0.9"
-reqwest = { version = "0.11", features = ["json"] }
-thiserror = "1.0"
-actix-http = "3"
-```
-
------
-
 # Uncaught Exception Lesson in Rust
 
 ## 📝 Lesson Summary
@@ -47,10 +6,10 @@ This project translates the concept of **Uncaught Exceptions** into a Rust conte
 
 The core vulnerability demonstrated is **Information Exposure** caused by improper error handling when processing user-controlled input. An endpoint constructs a backend API URL using the `Host` header from an incoming request.
 
-  * **Vulnerable Path**: The code attempts to parse a URL constructed with the user's `Host` header. [cite\_start]When an invalid `Host` (e.g., an empty string) is provided, the URL parser returns an error.The error handling logic then insecurely reflects the failed URL—including a hardcoded API key—back to the user in the HTTP response.
-  * **Secure Path**: The code is remediated using two key strategies:
-    1.  **Input Validation**: It checks the `Host` header against a predefined whitelist of allowed domains before using it. [cite: 145]
-    2.  **Graceful Error Handling**: It properly handles the `Result` from the URL parsing operation, logging detailed errors internally and returning a generic, safe error message to the user, preventing any information leaks. [cite: 110, 117]
+- **Vulnerable Path**: The code parses a URL constructed with the user's `Host` header. When an invalid `Host` is provided, the URL parser returns an error and the error handling logic insecurely reflects the failed URL—including a hardcoded API key—back to the user.
+- **Secure Path**: The code is remediated using:
+  1. **Input Validation**: Checks the `Host` header against a whitelist of allowed domains.
+  2. **Graceful Error Handling**: Logs detailed errors internally and returns a generic error message to the user.
 
 ## 🚀 Application Setup
 
@@ -111,7 +70,7 @@ You will receive a `500 Internal Server Error` response. The body of the respons
 Failed to construct backend request. URL: 'https:///v1/waitlist?api_key=88665751-288d-4175-852f-6519d79fdf1f&email=attacker@evil.com', Error: empty host
 ```
 
-**Success\!** The API key `88665751-288d-4175-852f-6519d79fdf1f` has been leaked.
+**Result:** The API key `88665751-288d-4175-852f-6519d79fdf1f` has been leaked.
 
 ## ✅ Demonstrating the Mitigation
 
@@ -168,4 +127,3 @@ Now, we'll send the same malicious requests to the secure endpoint.
     <
     Thank you for your interest. We will notify you when we are ready to launch.
     ```
-
